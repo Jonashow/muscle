@@ -1,0 +1,48 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MUSCLE 360</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}body{font:13px Arial;background:#071018;color:#eef5f7}
+#app{height:100vh;position:relative;background:radial-gradient(circle at 50% 40%,#18333f,#060e15 70%)}
+header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#08131be8;border-bottom:1px solid #243641;position:absolute;top:0;left:0;right:0;z-index:10}.logo{font-weight:900;letter-spacing:.1em}.logo span{color:#35d0ba}.status{font-size:11px;color:#9ab0ba}
+.panel{position:absolute;top:60px;bottom:0;width:215px;padding:14px;background:#09151ee8;z-index:9}.left{left:0;border-right:1px solid #243641}.right{right:0;width:255px;border-left:1px solid #243641}
+h3{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#9bb0ba;margin:0 0 8px}.btn{width:100%;padding:9px;margin:3px 0;background:#10202a;color:#eef5f7;border:1px solid #29404b;border-radius:8px;text-align:left;cursor:pointer}.btn.active,.btn:hover{background:#102d2d;border-color:#35a99c}
+#stage{position:absolute;inset:0}canvas{display:block;width:100%;height:100%}.hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);padding:7px 11px;border:1px solid #29404b;background:#071018dd;border-radius:20px;font-size:10px;color:#a8bbc2;white-space:nowrap;z-index:8}
+#name{font-size:21px;font-weight:800;margin:4px 0 7px}.tag{display:inline-block;color:#35d0ba;border:1px solid #27675f;padding:4px 7px;border-radius:99px;font-size:10px}.desc{margin-top:10px;color:#a9bbc3;line-height:1.55}.row{display:flex;justify-content:space-between;border-top:1px solid #223540;padding:9px 0;font-size:11px;color:#8ea5af}.row b{color:#eef5f7}
+@media(max-width:800px){.right{display:none}.left{width:180px}}@media(max-width:560px){.left{display:none}}
+</style></head><body><div id="app">
+<header><div class="logo">MUSCLE <span>360</span></div><div class="status">MODELO 3D PERSONAL</div></header>
+<aside class="panel left"><h3>Vistas</h3><button class="btn active" data-v="front">Frontal</button><button class="btn" data-v="back">Posterior</button><button class="btn" data-v="left">Lateral izquierda</button><button class="btn" data-v="right">Lateral derecha</button><button class="btn" id="reset">Restablecer</button><div style="height:14px"></div><h3>Capas</h3><label style="font-size:11px;color:#a7bbc3"><input id="zones" type="checkbox" checked> Mapa muscular</label><label style="display:block;margin-top:8px;font-size:11px;color:#a7bbc3"><input id="wire" type="checkbox"> Malla 3D</label></aside>
+<section id="stage"><div class="hint">Arrastra para girar · rueda para zoom · pulsa una zona muscular</div></section>
+<aside class="panel right"><h3>Selección</h3><div id="name">Tu amigo</div><span id="tag" class="tag" style="display:none"></span><div id="desc" class="desc">Carga del modelo 3D…</div><div id="rows"></div></aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script><script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script><script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+(function(){
+var stage=document.getElementById('stage'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,1,.01,100),renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(stage.clientWidth,stage.clientHeight);renderer.outputEncoding=THREE.sRGBEncoding;stage.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xdff5ff,0x18252d,2.2));var l=new THREE.DirectionalLight(0xffffff,3);l.position.set(3,5,5);scene.add(l);
+var c=new THREE.OrbitControls(camera,renderer.domElement);c.enableDamping=true;c.minDistance=1;c.maxDistance=8;c.target.set(0,0,0);
+var model=null,zones=[],zg=new THREE.Group(),selected=null;scene.add(zg);
+var zm=new THREE.MeshStandardMaterial({color:0xb63f38,transparent:true,opacity:.62}),sm=new THREE.MeshStandardMaterial({color:0xff6a59,emissive:0x4d100d,emissiveIntensity:.6,transparent:true,opacity:.88});
+function addZone(n,r,d,s,p){var z=new THREE.Mesh(new THREE.SphereGeometry(1,24,18),zm.clone());z.scale.set(s[0],s[1],s[2]);z.position.set(p[0],p[1],p[2]);z.userData={name:n,region:r,desc:d};zg.add(z);zones.push(z)}
+function loaded(g){model=g.scene;var b=new THREE.Box3().setFromObject(model),cc=b.getCenter(new THREE.Vector3()),ss=b.getSize(new THREE.Vector3()),k=2.7/Math.max(ss.x,ss.y,ss.z);model.position.sub(cc);model.scale.setScalar(k);model.traverse(function(o){if(o.isMesh&&o.material)o.material=o.material.clone()});scene.add(model);camera.position.set(0,.1,4.2);c.update();
+var b2=new THREE.Box3().setFromObject(model),mn=b2.min,mx=b2.max,w=mx.x-mn.x,h=mx.y-mn.y,d=mx.z-mn.z,xc=(mn.x+mx.x)/2;
+addZone('Pectoral mayor','Pecho','Aducción y rotación interna del brazo.',[w*.3,h*.1,d*.07],[xc,mn.y+h*.73,mn.z+d*.94]);
+addZone('Deltoides','Hombro','Eleva y estabiliza el brazo.',[w*.12,h*.15,d*.07],[mn.x+w*.26,mn.y+h*.76,mn.z+d*.84]);
+addZone('Bíceps braquial','Brazo','Flexiona el codo y ayuda a supinar el antebrazo.',[w*.09,h*.19,d*.06],[mn.x+w*.27,mn.y+h*.59,mn.z+d*.88]);
+addZone('Recto abdominal','Core','Flexiona el tronco y ayuda a estabilizarlo.',[w*.16,h*.28,d*.055],[xc,mn.y+h*.56,mn.z+d*.94]);
+addZone('Oblicuo externo','Core','Rotación y flexión lateral del tronco.',[w*.12,h*.23,d*.055],[mn.x+w*.34,mn.y+h*.55,mn.z+d*.89]);
+addZone('Cuádriceps','Muslo','Extiende la rodilla.',[w*.15,h*.30,d*.06],[mn.x+w*.39,mn.y+h*.29,mn.z+d*.87]);
+addZone('Trapecio','Espalda','Mueve y estabiliza la escápula.',[w*.24,h*.22,d*.06],[xc,mn.y+h*.75,mn.z+d*.08]);
+addZone('Dorsal ancho','Espalda','Extiende y aduce el hombro.',[w*.32,h*.28,d*.06],[xc,mn.y+h*.57,mn.z+d*.07]);
+addZone('Tríceps braquial','Brazo','Extiende el codo.',[w*.09,h*.21,d*.06],[mn.x+w*.73,mn.y+h*.59,mn.z+d*.12]);
+addZone('Glúteo mayor','Cadera','Potente extensor de cadera.',[w*.28,h*.18,d*.065],[xc,mn.y+h*.33,mn.z+d*.08]);
+addZone('Isquiotibiales','Muslo posterior','Flexionan la rodilla y extienden la cadera.',[w*.15,h*.28,d*.06],[mn.x+w*.62,mn.y+h*.29,mn.z+d*.12]);
+addZone('Gemelos','Pantorrilla','Contribuyen a la flexión plantar.',[w*.11,h*.25,d*.06],[mn.x+w*.62,mn.y+h*.11,mn.z+d*.15]);
+zg.visible=document.getElementById('zones').checked;document.getElementById('desc').textContent='Arrastra para rotar el cuerpo y pulsa una zona muscular.'}
+new THREE.GLTFLoader().load('person_0.glb',loaded,undefined,function(){document.getElementById('desc').textContent='No se pudo cargar person_0.glb. Comprueba que está en el mismo repositorio.'});
+var ray=new THREE.Raycaster(),m=new THREE.Vector2();
+renderer.domElement.addEventListener('pointerdown',function(e){var r=renderer.domElement.getBoundingClientRect();m.x=((e.clientX-r.left)/r.width)*2-1;m.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(m,camera);var hit=ray.intersectObjects(zones)[0];if(hit){if(selected)selected.material=zm.clone();selected=hit.object;selected.material=sm.clone();document.getElementById('name').textContent=selected.userData.name;document.getElementById('tag').textContent=selected.userData.region;document.getElementById('tag').style.display='inline-block';document.getElementById('desc').textContent=selected.userData.desc;document.getElementById('rows').innerHTML='<div class="row"><span>Modelo</span><b>Personal 3D</b></div><div class="row"><span>Interacción</span><b>360°</b></div>'}});
+function view(v){var d=4.2,p={front:[0,.1,d],back:[0,.1,-d],left:[-d,.1,0],right:[d,.1,0]}[v];camera.position.set(p[0],p[1],p[2]);c.target.set(0,0,0);c.update();document.querySelectorAll('[data-v]').forEach(function(b){b.classList.toggle('active',b.dataset.v===v)})}
+document.querySelectorAll('[data-v]').forEach(function(b){b.onclick=function(){view(b.dataset.v)}});document.getElementById('reset').onclick=function(){view('front')};document.getElementById('zones').onchange=function(){zg.visible=this.checked};document.getElementById('wire').onchange=function(){if(model)model.traverse(function(o){if(o.isMesh)o.material.wireframe=this.checked})}.bind(document.getElementById('wire'));
+addEventListener('resize',function(){camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();renderer.setSize(stage.clientWidth,stage.clientHeight)});(function a(){requestAnimationFrame(a);c.update();renderer.render(scene,camera)})();})();
+</script></body></html>
